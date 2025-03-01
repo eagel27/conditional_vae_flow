@@ -16,7 +16,7 @@ class Sampling(nn.Module):
 
 
 class ConditionEncoder(nn.Module):
-    """ Encode condition images """
+    """Encode condition images"""
 
     def __init__(self, cond_dim=(128, 128, 5), latent_dim=32):
         super(ConditionEncoder, self).__init__()
@@ -39,7 +39,7 @@ class ConditionEncoder(nn.Module):
 
 
 class Encoder(nn.Module):
-    """ Maps images to a triplet (z_mean, z_log_var, z)."""
+    """Maps images to a triplet (z_mean, z_log_var, z)."""
 
     def __init__(self, input_dim=(128, 128, 1), cond_z_dim=10, latent_dim=32):
         super(Encoder, self).__init__()
@@ -52,8 +52,12 @@ class Encoder(nn.Module):
 
         self.fc = nn.Linear(128 * 16 * 16, self.cond_z_dim)
 
-        self.fc_z_mean = nn.Linear(2*self.cond_z_dim, self.latent_dim)  # Output for z_mean
-        self.fc_z_log_var = nn.Linear(2*self.cond_z_dim, self.latent_dim)  # Output for z_log_var
+        self.fc_z_mean = nn.Linear(
+            2 * self.cond_z_dim, self.latent_dim
+        )  # Output for z_mean
+        self.fc_z_log_var = nn.Linear(
+            2 * self.cond_z_dim, self.latent_dim
+        )  # Output for z_log_var
 
     def forward(self, x, cond_z):
         # Apply convolution layers
@@ -98,8 +102,14 @@ class Decoder(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self, input_dim=(128, 128, 1), cond_dim=(128, 128, 5), latent_dim=32,
-                 cond_latent_dim=10, kl_weight=0.1):
+    def __init__(
+        self,
+        input_dim=(128, 128, 1),
+        cond_dim=(128, 128, 5),
+        latent_dim=32,
+        cond_latent_dim=10,
+        kl_weight=0.1,
+    ):
         super(VAE, self).__init__()
 
         self.input_dim = input_dim
@@ -107,7 +117,9 @@ class VAE(nn.Module):
         self.latent_dim = latent_dim
         self.kl_weight = kl_weight
 
-        self.encoder = Encoder(input_dim=input_dim, cond_z_dim=cond_latent_dim, latent_dim=latent_dim)
+        self.encoder = Encoder(
+            input_dim=input_dim, cond_z_dim=cond_latent_dim, latent_dim=latent_dim
+        )
         self.cond_encoder = ConditionEncoder(cond_dim=cond_dim, latent_dim=10)
         self.decoder = Decoder(latent_dim=latent_dim, cond_dim=cond_latent_dim)
 
@@ -120,13 +132,15 @@ class VAE(nn.Module):
 
     def kl_loss(self, z_mean, z_log_var):
 
-        kl_divergence = -0.5 * torch.sum(1 + z_log_var - z_mean.pow(2) - z_log_var.exp(), dim=1)
+        kl_divergence = -0.5 * torch.sum(
+            1 + z_log_var - z_mean.pow(2) - z_log_var.exp(), dim=1
+        )
         kl_loss = torch.mean(kl_divergence)  # Take the mean over the batch
         return kl_loss * self.kl_weight  # Apply the weight to the KL loss
 
     def compute_loss(self, x, x_reconstructed, z_mean, z_log_var):
         # Reconstruction loss (BCE or MSE)
-        recon_loss = F.mse_loss(x_reconstructed, x, reduction='sum')
+        recon_loss = F.mse_loss(x_reconstructed, x, reduction="sum")
 
         # KL divergence loss
         kl_loss = -0.5 * torch.sum(1 + z_log_var - z_mean.pow(2) - z_log_var.exp())
@@ -147,15 +161,3 @@ class VAE(nn.Module):
         cond, cond_f = self.cond_encoder(cond)
         z_mean, z_log_var = self.encoder(x, cond_f)
         return z_mean, z_log_var
-
-
-if __name__ == "__main__":
-
-    vae = VAE(input_dim=(128, 128, 1), cond_dim=(128, 128, 5), latent_dim=32, kl_weight=0.1)
-    optimizer = optim.Adam(vae.parameters(), lr=1e-3)
-
-    x = torch.randn(16, 1, 128, 128)
-    cond = torch.randn(16, 5, 128, 128)
-
-    reconstructed, z_mean, z_log_var = vae(x, cond)
-    print(reconstructed.shape)
