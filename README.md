@@ -9,3 +9,17 @@ Variational Autoencoders (VAEs) are generative models that learn latent represen
 
 The code developed was used for this [conference paper](https://ml4physicalsciences.github.io/2022/files/NeurIPS_ML4PS_2022_163.pdf).
 
+## Project Setup & Execution  
+
+### Installation  
+
+To install the required dependencies, you can run:  
+```bash
+uv sync
+```
+
+And to run:  
+
+```bash
+uv run main.py
+```
